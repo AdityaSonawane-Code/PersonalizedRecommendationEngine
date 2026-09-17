@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>MovieMind — Personalized Recommendations</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f7fb;
+            color: #1f2937;
+            min-height: 100vh;
+        }
+
+        header {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 22px 7%;
+        }
+
+        header h1 {
+            font-size: 28px;
+        }
+
+        header p {
+            color: #6b7280;
+            margin-top: 6px;
+        }
+
+        .container {
+            width: 86%;
+            max-width: 1100px;
+            margin: 40px auto;
+        }
+
+        .hero {
+            background: white;
+            border-radius: 18px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .hero h2 {
+            font-size: 25px;
+            margin-bottom: 10px;
+        }
+
+        .hero p {
+            color: #6b7280;
+            margin-bottom: 22px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        input {
+            flex: 1;
+            min-width: 220px;
+            padding: 14px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #6366f1;
+        }
+
+        button {
+            padding: 14px 22px;
+            border: none;
+            border-radius: 10px;
+            background: #6366f1;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #4f46e5;
+        }
+
+        .status {
+            margin: 20px 0;
+            color: #6b7280;
+        }
+
+        .recommendations {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 18px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 22px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        .rank {
+            font-size: 14px;
+            color: #6366f1;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .card h3 {
+            font-size: 18px;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .genres {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .score {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 8px;
+            background: #eef2ff;
+            color: #4f46e5;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .loading {
+            padding: 30px;
+            text-align: center;
+            color: #6b7280;
+        }
+
+        .error {
+            color: #dc2626;
+            background: #fef2f2;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        footer {
+            text-align: center;
+            color: #9ca3af;
+            padding: 30px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                width: 92%;
+                margin: 25px auto;
+            }
+
+            header {
+                padding: 20px 4%;
+            }
+
+            .hero {
+                padding: 22px;
+            }
+
+            .hero h2 {
+                font-size: 22px;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            input {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>🎬 MovieMind</h1>
+    <p>Personalized movie recommendations powered by machine learning</p>
+</header>
+
+
+<main class="container">
+
+    <section class="hero">
+
+        <h2>Find your next movie</h2>
+
+        <p>
+            Our hybrid recommendation engine combines
+            content-based filtering and collaborative filtering.
+        </p>
+
+        <div class="controls">
+
+            <input
+                type="number"
+                id="userId"
+                value="1"
+                min="1"
+                placeholder="Enter User ID"
+            >
+
+            <button onclick="getRecommendations()">
+                Get Recommendations
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <div id="status" class="status">
+        Enter a User ID and get personalized recommendations.
+    </div>
+
+
+    <section
+        id="recommendations"
+        class="recommendations">
+    </section>
+
+</main>
+
+
+<footer>
+    MovieMind • Built with Python, Scikit-learn & FastAPI
+</footer>
+
+
+<script>
+
+async function getRecommendations() {
+
+    const userId =
+        document.getElementById("userId").value;
+
+    const status =
+        document.getElementById("status");
+
+    const container =
+        document.getElementById("recommendations");
+
+
+    if (!userId) {
+
+        status.innerHTML =
+            "Please enter a User ID.";
+
+        return;
+    }
+
+
+    status.innerHTML =
+        "🤖 Calculating personalized recommendations...";
+
+    container.innerHTML =
+        '<div class="loading">Finding movies you may like...</div>';
+
+
+    try {
+
+        const response = await fetch(
+           `/api/recommend/${userId}`
+        );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Unable to get recommendations."
+            );
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        container.innerHTML = "";
+
+
+        data.recommendations.forEach(
+            (movie, index) => {
+
+                const card =
+                    document.createElement("div");
+
+                card.className = "card";
+
+
+                const genres =
+                    movie.genres
+                        .split("|")
+                        .join(" • ");
+
+
+                card.innerHTML = `
+
+                    <div class="rank">
+                        #${index + 1}
+                    </div>
+
+                    <h3>
+                        ${movie.title}
+                    </h3>
+
+                    <div class="genres">
+                        ${genres}
+                    </div>
+
+                    <span class="score">
+                        Match Score: ${movie.score}
+                    </span>
+
+                `;
+
+
+                container.appendChild(card);
+
+            }
+        );
+
+
+        status.innerHTML =
+            `✨ Recommendations for User ${data.user_id}`;
+
+
+    } catch (error) {
+
+        container.innerHTML = "";
+
+        status.innerHTML = `
+            <div class="error">
+                ❌ ${error.message}
+                <br><br>
+                Make sure your FastAPI server is running.
+            </div>
+        `;
+
+    }
+
+}
+
+</script>
+
+</body>
+</html>
